@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { connect } from 'react-redux';
-import styled from 'react-emotion';
-import { Manager, withTheme } from '@twilio/flex-ui';
+import * as React from "react";
+import { connect } from "react-redux";
+import styled from "react-emotion";
+import { Manager, withTheme } from "@twilio/flex-ui";
 
-const Name = styled('div')`
+const Name = styled("div")`
   font-size: 14px;
   font-weight: bold;
   margin-top: 10px;
@@ -13,7 +13,7 @@ const Name = styled('div')`
   text-overflow: ellipsis;
 `;
 
-const NameListItem = styled('div')`
+const NameListItem = styled("div")`
   font-size: 12px;
   font-weight: bold;
   white-space: nowrap;
@@ -23,14 +23,14 @@ const NameListItem = styled('div')`
 
 class ParticipantName extends React.Component {
   state = {
-    name: ''
+    name: ""
   };
 
   componentDidMount() {
     const { participant, serviceBaseUrl, task } = this.props;
     const { callSid } = participant;
 
-    if (participant.participantType === 'customer') {
+    if (participant.participantType === "customer") {
       this.setState({ name: task.attributes.name });
       return;
     }
@@ -38,30 +38,25 @@ class ParticipantName extends React.Component {
     const manager = Manager.getInstance();
     const token = manager.user.token;
 
-    const getCallPropertiesUrl = (
-      `https://${serviceBaseUrl}/get-call-properties?token=${token}&callSid=${callSid}`
-    );
+    const getCallPropertiesUrl = `https://${serviceBaseUrl}/ext-trans-get-call-properties?token=${token}&callSid=${callSid}`;
     fetch(getCallPropertiesUrl)
       .then(response => response.json())
       .then(json => {
         if (json) {
-          const name = (json && json.to) || '';
+          const name = (json && json.to) || "";
           this.setState({ name });
         }
       });
   }
 
   render() {
-    return this.props.listMode
-      ? (
-        <NameListItem className="ParticipantCanvas-Name">
-          {this.state.name}
-        </NameListItem>
-      ) : (
-        <Name className="ParticipantCanvas-Name">
-          {this.state.name}
-        </Name>
-      );
+    return this.props.listMode ? (
+      <NameListItem className="ParticipantCanvas-Name">
+        {this.state.name}
+      </NameListItem>
+    ) : (
+      <Name className="ParticipantCanvas-Name">{this.state.name}</Name>
+    );
   }
 }
 
@@ -69,7 +64,7 @@ const mapStateToProps = state => {
   const { serviceBaseUrl } = state.flex.config;
 
   return {
-    serviceBaseUrl,
+    serviceBaseUrl
   };
 };
 

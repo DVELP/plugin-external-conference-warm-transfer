@@ -1,52 +1,78 @@
-import * as React from 'react';
-import { connect } from 'react-redux';
-import { Actions, withTheme } from '@twilio/flex-ui';
-import Button from '@material-ui/core/Button';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
-import TextField from '@material-ui/core/TextField';
-import ConferenceService from '../services/ConferenceService';
+import * as React from "react";
+import { connect } from "react-redux";
+import {
+  Actions,
+  withTheme,
+  ConferenceParticipant,
+  Manager
+} from "@twilio/flex-ui";
+import Button from "@material-ui/core/Button";
+import Dialog from "@material-ui/core/Dialog";
+import DialogActions from "@material-ui/core/DialogActions";
+import DialogContent from "@material-ui/core/DialogContent";
+import DialogContentText from "@material-ui/core/DialogContentText";
+import TextField from "@material-ui/core/TextField";
+import ConferenceService from "../services/ConferenceService";
 
 class ConferenceDialog extends React.Component {
   state = {
-    conferenceTo: ''
+    conferenceTo: "",
+    quickDialNumbers: []
+  };
+
+  componentDidMount() {
+    fetch(`https://aquamarine-bombay-7262.twil.io/assets/quickDialNumbers.json`)
+      .then(res => res.json())
+      .then(data =>
+        this.setState({
+          quickDialNumbers: data
+        })
+      );
   }
 
   handleClose = () => {
     this.closeDialog();
-  }
+  };
 
   closeDialog = () => {
-    Actions.invokeAction('SetComponentState', {
-      name: 'ConferenceDialog',
+    Actions.invokeAction("SetComponentState", {
+      name: "ConferenceDialog",
       state: { isOpen: false }
     });
-  }
+  };
 
   handleKeyPress = e => {
     const key = e.key;
 
-    if (key === 'Enter') {
+    if (key === "Enter") {
       this.addConferenceParticipant();
       this.closeDialog();
     }
-  }
+  };
 
   handleChange = e => {
     const value = e.target.value;
     this.setState({ conferenceTo: value });
-  }
+  };
 
   handleDialButton = () => {
     this.addConferenceParticipant();
     this.closeDialog();
-  }
+  };
+
+  handleQuickDial = targetNumber => {
+    this.setState({ conferenceTo: targetNumber }, () => {
+      this.handleDialButton();
+    });
+  };
 
   addConferenceParticipant = async () => {
     const to = this.state.conferenceTo;
-    const { from, task, task: { taskSid } } = this.props;
+    const {
+      from,
+      task,
+      task: { taskSid }
+    } = this.props;
     const conference = task && (task.conference || {});
     const { conferenceSid } = conference;
 
@@ -54,20 +80,25 @@ class ConferenceDialog extends React.Component {
     console.log(`Adding ${to} to conference`);
     let participantCallSid;
     try {
-      participantCallSid = await ConferenceService.addParticipant(taskSid, from, to);
-      ConferenceService.addConnectingParticipant(conferenceSid, participantCallSid, 'unknown');
+      participantCallSid = await ConferenceService.addParticipant(
+        taskSid,
+        from,
+        to
+      );
+      ConferenceService.addConnectingParticipant(
+        conferenceSid,
+        participantCallSid,
+        "unknown"
+      );
     } catch (error) {
-      console.error('Error adding conference participant:', error);
+      console.error("Error adding conference participant:", error);
     }
-    this.setState({ conferenceTo: '' });
-  }
+    this.setState({ conferenceTo: "" });
+  };
 
   render() {
     return (
-      <Dialog
-        open={this.props.isOpen}
-        onClose={this.handleClose}
-      >
+      <Dialog open={this.props.isOpen} onClose={this.handleClose}>
         <DialogContent>
           <DialogContentText>
             Enter phone number to add to the conference
@@ -82,18 +113,28 @@ class ConferenceDialog extends React.Component {
             onKeyPress={this.handleKeyPress}
             onChange={this.handleChange}
           />
+          <DialogContentText>
+            Quick Dial: <br />
+            {this.state.quickDialNumbers.length === 0 &&
+              "Loading Quick Dials..."}
+            {this.state.quickDialNumbers.map(quickDialNumber => (
+              <Button
+                style={{ marginRight: "10px" }}
+                onClick={() =>
+                  this.handleQuickDial(quickDialNumber.phoneNumber)
+                }
+                color="primary"
+              >
+                {quickDialNumber.displayName}
+              </Button>
+            ))}
+          </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={this.handleDialButton}
-            color="primary"
-          >
+          <Button onClick={this.handleDialButton} color="primary">
             Dial
           </Button>
-          <Button
-            onClick={this.closeDialog}
-            color="secondary"
-          >
+          <Button onClick={this.closeDialog} color="secondary">
             Cancel
           </Button>
         </DialogActions>
@@ -104,7 +145,8 @@ class ConferenceDialog extends React.Component {
 
 const mapStateToProps = state => {
   const componentViewStates = state.flex.view.componentViewStates;
-  const conferenceDialogState = componentViewStates && componentViewStates.ConferenceDialog;
+  const conferenceDialogState =
+    componentViewStates && componentViewStates.ConferenceDialog;
   const isOpen = conferenceDialogState && conferenceDialogState.isOpen;
   return {
     isOpen
